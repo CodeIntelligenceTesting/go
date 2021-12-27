@@ -590,6 +590,15 @@ func walkCall1(n *ir.CallExpr, init *ir.Nodes) {
 	}
 
 	n.Args = args
+	if base.Debug.Libfuzzer != 0 && n.X.Sym() != nil {
+		switch n.X.Sym().Pkg.Path {
+		case "strings":
+			if n.X.Sym().Name == "EqualFold" && len(args) == 2 {
+				paramType := types.Types[types.TSTRING]
+				init.Append(mkcall("libfuzzerHookStrCmp", nil, init, tracecmpArg(args[0], paramType, init), tracecmpArg(args[1], paramType, init), ir.NewInt(1), fakePC()))
+			}
+		}
+	}
 }
 
 // walkDivMod walks an ODIV or OMOD node.

@@ -452,9 +452,11 @@ func (o *orderState) edge() {
 	// is still necessary.
 	counter.Linksym().Type = objabi.SLIBFUZZER_EXTRA_COUNTER
 
-	// counter += 1
-	incr := ir.NewAssignOpStmt(base.Pos, ir.OADD, counter, ir.NewInt(1))
-	o.append(incr)
+	var init ir.Nodes
+	init.Append(mkcall("libfuzzerIncrementCounter", nil, &init, ir.NewAddrExpr(base.Pos, counter)))
+	for _, n := range init.Take() {
+		o.append(n)
+	}
 }
 
 // orderBlock orders the block of statements in n into a new slice,
