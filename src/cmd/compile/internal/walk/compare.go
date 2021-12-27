@@ -6,6 +6,7 @@ package walk
 
 import (
 	"go/constant"
+	"math/rand"
 
 	"cmd/compile/internal/base"
 	"cmd/compile/internal/ir"
@@ -14,6 +15,10 @@ import (
 	"cmd/compile/internal/typecheck"
 	"cmd/compile/internal/types"
 )
+
+func fakePC() ir.Node {
+	return ir.NewInt(int64(rand.Uint32()))
+}
 
 // The result of walkCompare MUST be assigned back to n, e.g.
 // 	n.Left = walkCompare(n.Left, init)
@@ -131,7 +136,7 @@ func walkCompare(n *ir.BinaryExpr, init *ir.Nodes) ir.Node {
 			default:
 				base.Fatalf("unexpected integer size %d for %v", t.Size(), t)
 			}
-			init.Append(mkcall(fn, nil, init, tracecmpArg(l, paramType, init), tracecmpArg(r, paramType, init)))
+			init.Append(mkcall(fn, nil, init, tracecmpArg(l, paramType, init), tracecmpArg(r, paramType, init), fakePC()))
 		}
 		return n
 	case types.TARRAY:
@@ -281,6 +286,14 @@ func walkCompareInterface(n *ir.BinaryExpr, init *ir.Nodes) ir.Node {
 }
 
 func walkCompareString(n *ir.BinaryExpr, init *ir.Nodes) ir.Node {
+	if base.Debug.Libfuzzer != 0 {
+		fn := "libfuzzerHookStrCmp"
+		l := cheapExpr(n.X, init)
+		r := cheapExpr(n.Y, init)
+		paramType := types.Types[types.TSTRING]
+		init.Append(mkcall(fn, nil, init, tracecmpArg(l, paramType, init), tracecmpArg(r, paramType, init), ir.NewInt(1), fakePC()))
+	}
+
 	// Rewrite comparisons to short constant strings as length+byte-wise comparisons.
 	var cs, ncs ir.Node // const string, non-const string
 	switch {
