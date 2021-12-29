@@ -267,6 +267,7 @@ func libfuzzerTraceConstCmp4(uint32, uint32, int)
 func libfuzzerTraceConstCmp8(uint64, uint64, int)
 func libfuzzerHookStrCmp(string, string, int, int)
 func libfuzzerIncrementCounter(*uint8)
+func LibfuzzerInitializeCounters()
 
 // architecture variants
 var x86HasPOPCNT bool
