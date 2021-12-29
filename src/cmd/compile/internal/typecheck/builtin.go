@@ -206,6 +206,7 @@ var runtimeDecls = [...]struct {
 	{"libfuzzerTraceConstCmp8", funcTag, 148},
 	{"libfuzzerHookStrCmp", funcTag, 149},
 	{"libfuzzerIncrementCounter", funcTag, 151},
+	{"LibfuzzerInitializeCounters", funcTag, 9},
 	{"x86HasPOPCNT", varTag, 6},
 	{"x86HasSSE41", varTag, 6},
 	{"x86HasFMA", varTag, 6},
