@@ -28,7 +28,7 @@ TEXT	runtime·libfuzzerCallHookStrCmp(SB), NOSPLIT, $0-40
 	MOVQ	fn+0(FP), AX
 	MOVQ	hookId+8(FP), RARG0
 	MOVQ	s1+16(FP), RARG1
-    MOVQ	s2+24(FP), RARG2
+	MOVQ	s2+24(FP), RARG2
 	MOVQ	result+32(FP), RARG3
 
 	get_tls(R12)
@@ -116,13 +116,24 @@ TEXT	runtime·libfuzzerCallTraceIntCmp(SB), NOSPLIT, $0-32
 	MOVQ	(g_sched+gobuf_sp)(R10), SP
 call:
 	ANDQ	$~15, SP	// alignment for gcc ABI
+	// Load the address of the end of the function and push it into the stack.
+	// This address will be jumped to after executing the return instruction
+	// from the return sled. There we reset the stack pointer and return.
 	MOVQ    $end_of_function(SB), BX
 	PUSHQ   BX
+	// Load the starting address of the return sled into BX.
 	MOVQ    $ret_sled(SB), BX
+	// Load the address of the i'th return instruction fron the return sled.
+	// The index is given in the fakePC argument.
 	ADDQ    RARG2, BX
 	PUSHQ   BX
+	// Call the original function with the fakePC return address on the stack.
+	// Function arguments arg0 and arg1 are passed unchanged in the registers
+	// RDI and RSI as specified by the x64 calling convention.
 	JMP     AX
-non_reachable:
+// This code will not be executed and is only there to statisfy assembler
+// check of a balanced stack.
+not_reachable:
 	POPQ    BX
 	POPQ    BX
 	RET

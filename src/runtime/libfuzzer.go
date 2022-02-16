@@ -8,6 +8,7 @@ package runtime
 
 import "unsafe" // for go:linkname
 
+// Keep in sync with the definition of ret_sled in src/runtime/libfuzzer_amd64.s
 const retSledSize = 512
 
 func libfuzzerCallTraceIntCmp(fn *byte, arg0, arg1, fakePC uintptr)
@@ -54,31 +55,35 @@ func libfuzzerTraceConstCmp8(arg0, arg1 uint64, fakePC int) {
 	libfuzzerCallTraceIntCmp(&__sanitizer_cov_trace_const_cmp8, uintptr(arg0), uintptr(arg1), uintptr(fakePC))
 }
 
-func libfuzzerHookStrCmp(s1, s2 string, result, fakePC int) {
-	libfuzzerCallHookStrCmp(&__sanitizer_weak_hook_strcmp, uintptr(fakePC), cstring(s1), cstring(s2), uintptr(result))
+func libfuzzerHookStrCmp(s1, s2 string, equal bool, fakePC int) {
+	if !equal {
+		libfuzzerCallHookStrCmp(&__sanitizer_weak_hook_strcmp, uintptr(fakePC), cstring(s1), cstring(s2), uintptr(1))
+	}
+}
+
+func libfuzzerHookEqualFold(s1, s2 string, fakePC int) {
+	libfuzzerCallHookStrCmp(&__sanitizer_weak_hook_strcmp, uintptr(fakePC), cstring(s1), cstring(s2), uintptr(1))
 }
 
 var pcTables []byte
 
 func LibfuzzerInitializeCounters() {
 	libfuzzerCallTraceInit(&__sanitizer_cov_8bit_counters_init, &__start___sancov_cntrs, &__stop___sancov_cntrs)
-	var offset uintptr = 0
 	start := unsafe.Pointer(&__start___sancov_cntrs)
 	end := unsafe.Pointer(&__stop___sancov_cntrs)
 
-	cur := start
-	for cur != end {
-		offset++
-		cur = unsafe.Pointer(uintptr(start) + offset)
-	}
-
-	size := (offset + 1) * unsafe.Sizeof(uintptr(0)) * 2
+	// PC tables are arrays of ptr-sized integers representing pairs [PC,PCFlags] for every instrumented block.
+	// The number of PCs and PCFlags is the same as the number of 8-bit counters. Each PC table entry has
+	// the size of two ptr-sized integers. We allocate one more byte than what we actually need so that we can
+	// get a pointer representing the end of the PC table array.
+	size := (uintptr(end)-uintptr(start))*unsafe.Sizeof(uintptr(0))*2 + 1
 	pcTables = make([]byte, size)
 	libfuzzerCallTraceInit(&__sanitizer_cov_pcs_init, &pcTables[0], &pcTables[size-1])
 }
 
-// libfuzzerIncrementCounter guarantees that the counter never becomes zero again once
-// it is incremented. It implements the NeverZero optimization presented by the paper:
+// libfuzzerIncrementCounter guarantees that the counter never becomes zero
+// again once it has been incremented once. It implements the NeverZero
+// optimization presented by the paper:
 // "AFL++: Combining Incremental Steps of Fuzzing Research"
 func libfuzzerIncrementCounter(counter *uint8) {
 	if *counter == 0xff {

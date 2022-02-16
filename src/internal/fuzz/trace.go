@@ -32,6 +32,7 @@ func libfuzzerTraceConstCmp2(arg0, arg1 uint16, fakePC int) {}
 func libfuzzerTraceConstCmp4(arg0, arg1 uint32, fakePC int) {}
 func libfuzzerTraceConstCmp8(arg0, arg1 uint64, fakePC int) {}
 
-func libfuzzerHookStrCmp(arg0, arg1 string, result, fakePC int) {}
+func libfuzzerHookStrCmp(arg0, arg1 string, result bool, fakePC int) {}
+func libfuzzerHookEqualFold(arg0, arg1 string, fakePC int)           {}
 
 func libfuzzerIncrementCounter(counter *uint8) {}
