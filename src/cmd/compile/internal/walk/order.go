@@ -440,21 +440,22 @@ func (o *orderState) edge() {
 		return
 	}
 
-	// Create a new uint8 counter to be allocated in section
-	// __libfuzzer_extra_counters.
+	// Create a new uint8 counter to be allocated in section __sancov_cntrs
 	counter := staticinit.StaticName(types.Types[types.TUINT8])
-	counter.SetLibfuzzerExtraCounter(true)
-	// As well as setting SetLibfuzzerExtraCounter, we preemptively set the
-	// symbol type to SLIBFUZZER_EXTRA_COUNTER so that the race detector
+	counter.SetLibfuzzer8BitCounter(true)
+	// As well as setting SetLibfuzzer8BitCounter, we preemptively set the
+	// symbol type to SLIBFUZZER_8BIT_COUNTER so that the race detector
 	// instrumentation pass (which does not have access to the flags set by
-	// SetLibfuzzerExtraCounter) knows to ignore them. This information is
-	// lost by the time it reaches the compile step, so SetLibfuzzerExtraCounter
+	// SetLibfuzzer8BitCounter) knows to ignore them. This information is
+	// lost by the time it reaches the compile step, so SetLibfuzzer8BitCounter
 	// is still necessary.
-	counter.Linksym().Type = objabi.SLIBFUZZER_EXTRA_COUNTER
+	counter.Linksym().Type = objabi.SLIBFUZZER_8BIT_COUNTER
 
-	// counter += 1
-	incr := ir.NewAssignOpStmt(base.Pos, ir.OADD, counter, ir.NewInt(1))
-	o.append(incr)
+	var init ir.Nodes
+	init.Append(mkcall("libfuzzerIncrementCounter", nil, &init, ir.NewAddrExpr(base.Pos, counter)))
+	for _, n := range init.Take() {
+		o.append(n)
+	}
 }
 
 // orderBlock orders the block of statements in n into a new slice,
