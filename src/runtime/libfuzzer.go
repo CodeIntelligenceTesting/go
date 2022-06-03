@@ -57,8 +57,7 @@ func libfuzzerTraceConstCmp8(arg0, arg1 uint64, fakePC int) {
 
 var pcTables []byte
 
-//go:nosplit
-func init() {
+func init2() {
 	libfuzzerCallWithTwoByteBuffers(&__sanitizer_cov_8bit_counters_init, &__start___sancov_cntrs, &__stop___sancov_cntrs)
 	start := unsafe.Pointer(&__start___sancov_cntrs)
 	end := unsafe.Pointer(&__stop___sancov_cntrs)
